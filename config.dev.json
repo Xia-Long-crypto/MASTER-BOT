@@ -26,7 +26,7 @@
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
   "nickNameBot": "➤『𝗝𝗢𝗥𝗗𝗔𝗡 𝗕𝗢𝗧 』☜ヅ",
-  "prefix": "#",
+  "prefix": "+",
   "database": {
     "type": "sqlite",
     "uriMongodb": "",
