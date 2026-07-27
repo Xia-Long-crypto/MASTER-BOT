@@ -1,71 +1,202 @@
-const fs = require("fs-extra");
 const { config } = global.GoatBot;
-const { client } = global;
+const { writeFileSync } = require("fs-extra");
 
 module.exports = {
   config: {
-    name: "viponly",
-    aliases: ["vipon", "onlyvip"],
-    version: "1.0",
+    name: "vip",
+    version: "1.1",
     author: "ଓ.ᎩႮᏒ仒ꜝ",
     countDown: 5,
-    role: 3,
+    role: 0,
     description: {
-      fr: "Activer/désactiver le mode où seuls les utilisateurs VIP peuvent utiliser le bot",
-      en: "Turn on/off only VIP users can use bot"
+      fr: "Ajouter, supprimer ou modifier le rôle VIP",
+      en: "Add, remove, edit VIP role"
     },
-    category: "owner",
+    category: "chat",
     guide: {
-      fr: "   {pn} [on | off] : Activer/désactiver le mode VIP seulement"
-        + "\n   {pn} noti [on | off] : Activer/désactiver la notification lorsqu’un utilisateur non VIP utilise le bot",
-      en: "   {pn} [on | off]: Turn on/off the mode only VIP can use bot"
-        + "\n   {pn} noti [on | off]: Turn on/off the notification when user is not VIP use bot"
+      fr: '   {pn} [add | -a] <uid | @tag> : Ajouter le rôle VIP à un utilisateur'
+        + '\n   {pn} [remove | -r] <uid | @tag> : Supprimer le rôle VIP d’un utilisateur'
+        + '\n   {pn} [list | -l] : Lister tous les utilisateurs VIP',
+      en: '   {pn} [add | -a] <uid | @tag>: Add VIP role for user'
+        + '\n   {pn} [remove | -r] <uid | @tag>: Remove VIP role of user'
+        + '\n   {pn} [list | -l]: List all VIP users'
     }
   },
 
   langs: {
     fr: {
-      turnedOn: "✅ | Mode VIP seulement activé",
-      turnedOff: "✅ | Mode VIP seulement désactivé",
-      turnedOnNoti: "✅ | Notification activée pour les utilisateurs non VIP",
-      turnedOffNoti: "✅ | Notification désactivée pour les utilisateurs non VIP"
+      added:
+`•.:°❀×═════════×❀°:.•
+💎 VIP AJOUTÉ (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      alreadyVip:
+`•.:°❀×═════════×❀°:.•
+⚠️ DÉJÀ VIP (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      missingIdAdd:
+`•.:°❀×═════════×❀°:.•
+⚠️ Mentionne ou entre un ID
+•.:°❀×═════════×❀°:.•`,
+
+      removed:
+`•.:°❀×═════════×❀°:.•
+❌ VIP RETIRÉ (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      notVip:
+`•.:°❀×═════════×❀°:.•
+⚠️ PAS VIP (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      missingIdRemove:
+`•.:°❀×═════════×❀°:.•
+⚠️ Entre un ID à retirer
+•.:°❀×═════════×❀°:.•`,
+
+      listVip:
+`•.:°❀×═════════×❀°:.•
+👑 LISTE VIP :
+%1
+•.:°❀×═════════×❀°:.•`
     },
+
     en: {
-      turnedOn: "Turned on the mode only VIP can use bot",
-      turnedOff: "Turned off the mode only VIP can use bot",
-      turnedOnNoti: "Turned on the notification when user is not VIP use bot",
-      turnedOffNoti: "Turned off the notification when user is not VIP use bot"
+      added:
+`•.:°❀×═════════×❀°:.•
+💎 ADDED VIP (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      alreadyVip:
+`•.:°❀×═════════×❀°:.•
+⚠️ ALREADY VIP (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      missingIdAdd:
+`•.:°❀×═════════×❀°:.•
+⚠️ Enter ID or tag user
+•.:°❀×═════════×❀°:.•`,
+
+      removed:
+`•.:°❀×═════════×❀°:.•
+❌ REMOVED VIP (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      notVip:
+`•.:°❀×═════════×❀°:.•
+⚠️ NOT VIP (${ "%1" }) :
+%2
+•.:°❀×═════════×❀°:.•`,
+
+      missingIdRemove:
+`•.:°❀×═════════×❀°:.•
+⚠️ Enter ID to remove
+•.:°❀×═════════×❀°:.•`,
+
+      listVip:
+`•.:°❀×═════════×❀°:.•
+👑 VIP LIST :
+%1
+•.:°❀×═════════×❀°:.•`
     }
   },
 
-  onStart: function ({ args, message, getLang }) {
-    let isSetNoti = false;
-    let value;
-    let indexGetVal = 0;
+  onStart: async function ({ message, args, usersData, event, getLang, role }) {
 
-    if (args[0] == "noti") {
-      isSetNoti = true;
-      indexGetVal = 1;
+    if (!config.vipuser) config.vipuser = [];
+
+    switch (args[0]) {
+      case "add":
+      case "-a": {
+
+        if (role < 2) return message.reply("⚠️ | Vous n'avez pas la permission d'ajouter des VIP.");
+
+        if (args[1]) {
+          let uids = [];
+          if (Object.keys(event.mentions).length > 0)
+            uids = Object.keys(event.mentions);
+          else if (event.messageReply)
+            uids.push(event.messageReply.senderID);
+          else
+            uids = args.filter(arg => !isNaN(arg));
+
+          const notVipIds = [];
+          const vipIds = [];
+          for (const uid of uids) {
+            if (config.vipuser.includes(uid))
+              vipIds.push(uid);
+            else
+              notVipIds.push(uid);
+          }
+
+          config.vipuser.push(...notVipIds);
+          const getNames = await Promise.all(uids.map(uid => usersData.getName(uid).then(name => ({ uid, name }))));
+          writeFileSync(global.client.dirConfig, JSON.stringify(config, null, 2));
+
+          return message.reply(
+            (notVipIds.length > 0 ? getLang("added", notVipIds.length, getNames.map(({ uid, name }) => `• ${name} (${uid})`).join("\n")) : "")
+            + (vipIds.length > 0 ? getLang("alreadyVip", vipIds.length, vipIds.map(uid => `• ${uid}`).join("\n")) : "")
+          );
+        } else
+          return message.reply(getLang("missingIdAdd"));
+      }
+
+      case "remove":
+      case "-r": {
+
+        if (role < 2) return message.reply("⚠️ | Vous n'avez pas la permission de supprimer des VIP.");
+
+        if (args[1]) {
+          let uids = [];
+          if (Object.keys(event.mentions).length > 0)
+            uids = Object.keys(event.mentions);
+          else
+            uids = args.filter(arg => !isNaN(arg));
+
+          const notVipIds = [];
+          const vipIds = [];
+          for (const uid of uids) {
+            if (config.vipuser.includes(uid))
+              vipIds.push(uid);
+            else
+              notVipIds.push(uid);
+          }
+
+          for (const uid of vipIds)
+            config.vipuser.splice(config.vipuser.indexOf(uid), 1);
+
+          const getNames = await Promise.all(vipIds.map(uid => usersData.getName(uid).then(name => ({ uid, name }))));
+          writeFileSync(global.client.dirConfig, JSON.stringify(config, null, 2));
+
+          return message.reply(
+            (vipIds.length > 0 ? getLang("removed", vipIds.length, getNames.map(({ uid, name }) => `• ${name} (${uid})`).join("\n")) : "")
+            + (notVipIds.length > 0 ? getLang("notVip", notVipIds.length, notVipIds.map(uid => `• ${uid}`).join("\n")) : "")
+          );
+        } else
+          return message.reply(getLang("missingIdRemove"));
+      }
+
+      case "list":
+      case "-l": {
+
+        if (config.vipuser.length === 0)
+          return message.reply("⚠️ | Aucun utilisateur VIP trouvé");
+
+        const getNames = await Promise.all(config.vipuser.map(uid => usersData.getName(uid).then(name => ({ uid, name }))));
+
+        return message.reply(getLang("listVip", getNames.map(({ uid, name }) => `• ${name} (${uid})`).join("\n")));
+      }
+
+      default:
+        return message.SyntaxError();
     }
-
-    if (args[indexGetVal] == "on")
-      value = true;
-    else if (args[indexGetVal] == "off")
-      value = false;
-    else
-      return message.SyntaxError();
-
-    if (!config.vipOnly) config.vipOnly = {};
-    if (!config.hideNotiMessage) config.hideNotiMessage = {};
-
-    if (isSetNoti) {
-      config.hideNotiMessage.vipOnly = !value;
-      message.reply(getLang(value ? "turnedOnNoti" : "turnedOffNoti"));
-    } else {
-      config.vipOnly.enable = value;
-      message.reply(getLang(value ? "turnedOn" : "turnedOff"));
-    }
-
-    fs.writeFileSync(client.dirConfig, JSON.stringify(config, null, 2));
   }
 };
