@@ -55,6 +55,9 @@ module.exports = {
     else
       return message.SyntaxError();
 
+    if (!config.vipOnly) config.vipOnly = {};
+    if (!config.hideNotiMessage) config.hideNotiMessage = {};
+
     if (isSetNoti) {
       config.hideNotiMessage.vipOnly = !value;
       message.reply(getLang(value ? "turnedOnNoti" : "turnedOffNoti"));
