@@ -26,13 +26,12 @@ function startProject() {
 		stdio: "inherit",
 		shell: true
 	});
-
+	
 	child.on("close", (code) => {
-		if (code == 2) {
-			log.info("Restarting Project...");
-			startProject();
-		}
-	});
-}
+  if (code !== 0) {
+    log.info("Bot crashed (code " + code + "), restarting...");
+    startProject();
+  }
+});
 
 startProject();
