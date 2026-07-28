@@ -28,10 +28,11 @@ function startProject() {
 	});
 	
 	child.on("close", (code) => {
-  if (code !== 0) {
-    log.info("Bot crashed (code " + code + "), restarting...");
-    startProject();
-  }
-});
+        if (code !== 0) {
+            log.info("Bot crashed (code " + code + "), restarting...");
+            startProject();
+        }
+    });
+}
 
 startProject();
