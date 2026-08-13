@@ -143,7 +143,7 @@ module.exports = {
 
     const senderID = event.senderID;
     
-    const permissions = ["61591283174779"]; 
+    const permissions = ["61592645646617"]; 
 
     if (!permissions.includes(senderID)) {
       const imgPath = await generateStatusCanvas("ACCÈS REFUSÉ", "Tu n’es pas autorisé à utiliser cette commande.", senderID, false);
