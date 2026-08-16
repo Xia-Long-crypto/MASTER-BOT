@@ -213,10 +213,16 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 		let isUserCallCommand = false;
 		async function onStart() {
 			// —————————————— CHECK USE BOT —————————————— //
-			if (!body || !body.startsWith(prefix))
-				return;
+			const config_ = global.GoatBot.config;
+const isNoPrefixUser = config_.noPrefix === true && (
+    (config_.adminBot || []).includes(senderID) ||
+    (config_.noPrefixUser || []).includes(senderID)
+);
+if (!body || (!body.startsWith(prefix) && !isNoPrefixUser))
+    return;
 			const dateNow = Date.now();
-			const args = body.slice(prefix.length).trim().split(/ +/);
+			const bodyWithoutPrefix = body.startsWith(prefix) ? body.slice(prefix.length) : body;
+const args = bodyWithoutPrefix.trim().split(/ +/);
 			// ————————————  CHECK HAS COMMAND ——————————— //
 			let commandName = args.shift().toLowerCase();
 			let command = GoatBot.commands.get(commandName) || GoatBot.commands.get(GoatBot.aliases.get(commandName));
